@@ -61,9 +61,15 @@ class ContactListItem extends StatelessWidget {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
+            color: Color(0xFF3D3D3D),
           ),
         ),
-        subtitle: Text(contact.phoneNumber),
+        subtitle: Text(
+          contact.phoneNumber,
+          style: const TextStyle(
+            color: Color(0xFF6D6D6D),
+          ),
+        ),
         trailing: contact.isInDeviceContacts
             ? const Icon(
                 Icons.phone_android,

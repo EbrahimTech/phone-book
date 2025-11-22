@@ -22,32 +22,16 @@ class ContactApiService {
             'ApiKey': ApiConstants.apiKey, // Case-sensitive: ApiKey (not apiKey or API_KEY)
           });
 
-          // Only add Content-Type if not FormData
           if (options.data is! FormData) {
             options.headers['Content-Type'] = 'application/json';
-          }
-
-          print(
-            '🚀 Request: ${options.method} ${options.baseUrl}${options.path}',
-          );
-          print('📤 Headers: ${options.headers}');
-          if (options.data != null && options.data is! FormData) {
-            print('📦 Body: ${options.data}');
           }
 
           handler.next(options);
         },
         onResponse: (response, handler) {
-          print(
-            '✅ Response: ${response.statusCode} ${response.requestOptions.path}',
-          );
           handler.next(response);
         },
         onError: (error, handler) {
-          print(
-            '❌ Error: ${error.response?.statusCode} ${error.requestOptions.path}',
-          );
-          print('Error details: ${error.response?.data}');
           handler.next(error);
         },
       ),
@@ -61,69 +45,39 @@ class ContactApiService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        
-        print('📦 Response data type: ${data.runtimeType}');
-        print('📦 Response data: $data');
 
         if (data is List) {
-          print('✅ Response is a List with ${data.length} items');
-          final contacts = data.map((json) {
-            print('📝 Parsing contact: $json');
-            return ContactModel.fromJson(json);
-          }).toList();
-          print('✅ Parsed ${contacts.length} contacts');
-          return contacts;
+          return data.map((json) => ContactModel.fromJson(json)).toList();
         } else if (data is Map) {
-          print('📋 Response is a Map with keys: ${data.keys}');
-          
-          // Try different response formats
-          // Format 1: {success: true, data: {users: [...]}}
           if (data.containsKey('data') && data['data'] is Map) {
             final dataMap = data['data'] as Map;
             if (dataMap.containsKey('users') && dataMap['users'] is List) {
               final list = dataMap['users'] as List;
-              print(
-                '✅ Found users array in data.users with ${list.length} items',
-              );
               return list.map((json) => ContactModel.fromJson(json)).toList();
             }
           }
           
-          // Format 2: {data: [...]}
           if (data.containsKey('data') && data['data'] is List) {
             final list = data['data'] as List;
-            print('✅ Found data array with ${list.length} items');
             return list.map((json) => ContactModel.fromJson(json)).toList();
           }
           
-          // Format 3: {users: [...]}
           if (data.containsKey('users') && data['users'] is List) {
             final list = data['users'] as List;
-            print('✅ Found users array with ${list.length} items');
             return list.map((json) => ContactModel.fromJson(json)).toList();
           }
           
-          // Format 4: {contacts: [...]}
           if (data.containsKey('contacts') && data['contacts'] is List) {
             final list = data['contacts'] as List;
-            print('✅ Found contacts array with ${list.length} items');
             return list.map((json) => ContactModel.fromJson(json)).toList();
           }
           
-          // Format 5: {results: [...]}
           if (data.containsKey('results') && data['results'] is List) {
             final list = data['results'] as List;
-            print('✅ Found results array with ${list.length} items');
             return list.map((json) => ContactModel.fromJson(json)).toList();
           }
-          
-          print('⚠️ Map does not contain expected array fields');
-          print('Available keys: ${data.keys}');
-        } else {
-          print('⚠️ Unexpected response type: ${data.runtimeType}');
         }
         
-        print('⚠️ Returning empty list');
         return [];
       }
       throw Exception('Failed to load contacts: ${response.statusCode}');
@@ -139,7 +93,6 @@ class ContactApiService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        print('📦 Get contact response: $data');
         
         // Handle different response formats
         if (data is Map) {
@@ -170,28 +123,21 @@ class ContactApiService {
     File? imageFile,
   }) async {
     try {
-      // If there's an image, try to upload it first
-      // If upload fails, continue without image
       String? photoUrl;
       if (imageFile != null) {
         try {
           photoUrl = await _uploadImage(imageFile);
         } catch (e) {
-          print('⚠️ Failed to upload image, continuing without image: $e');
           // Continue without image - don't fail the entire contact creation
         }
       }
 
-      // Create contact data
-      // Note: API uses profileImageUrl based on response structure
       final contactData = {
         'firstName': contact.firstName,
         'lastName': contact.lastName,
         'phoneNumber': contact.phoneNumber,
         if (photoUrl != null) 'profileImageUrl': photoUrl,
       };
-
-      print('📤 Creating contact with data: $contactData');
       
       final response = await _dio.post(
         ApiConstants.createContact,
@@ -199,18 +145,12 @@ class ContactApiService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('📦 Create response data: ${response.data}');
         final data = response.data;
 
-        // Handle different response formats
-        // Expected format: {success: true, data: {id, firstName, lastName, phoneNumber, profileImageUrl}, status: 200}
         if (data is Map) {
-          // Format: {success: true, data: {...}} - data contains user object directly
           if (data.containsKey('data') && data['data'] is Map) {
             final dataMap = data['data'] as Map<String, dynamic>;
-            // Check if data contains user fields directly (not nested in 'user')
             if (dataMap.containsKey('firstName') || dataMap.containsKey('id')) {
-              print('✅ Found user data directly in data object');
               return ContactModel.fromJson(dataMap);
             } else if (dataMap.containsKey('user')) {
               return ContactModel.fromJson(
@@ -224,7 +164,6 @@ class ContactApiService {
               );
             }
           }
-          // Format: direct user object (fallback)
           if (data.containsKey('firstName') || data.containsKey('id')) {
             return ContactModel.fromJson(data as Map<String, dynamic>);
           }
@@ -270,7 +209,6 @@ class ContactApiService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        print('📦 Update response: $data');
         
         // Handle different response formats
         if (data is Map) {
@@ -328,20 +266,12 @@ class ContactApiService {
         throw Exception('Invalid file format. Only PNG and JPG are allowed.');
       }
 
-      // Try different field names that might be expected by the API
-      // Based on testing, 'image' works, so we'll try it first
       final fieldNames = ['image', 'file', 'photo', 'upload'];
       
       DioException? lastError;
       
       for (final fieldName in fieldNames) {
         try {
-          print('🖼️ Trying to upload image with field name: $fieldName');
-          
-          final contentType = extension == 'png' 
-              ? 'image/png'
-              : 'image/jpeg';
-          
           final formData = FormData.fromMap({
             fieldName: await MultipartFile.fromFile(
               imageFile.path,
@@ -349,36 +279,24 @@ class ContactApiService {
             ),
           });
           
-          // Set content type header
-          print('📤 Uploading file: $fileName (${contentType})');
-          
           final response = await _dio.post(
             ApiConstants.uploadImage,
             data: formData,
           );
 
           if (response.statusCode == 200 || response.statusCode == 201) {
-            print('✅ Image uploaded successfully with field: $fieldName');
-            print('📦 Upload response: ${response.data}');
-            
-            // Handle different response formats
-            // Expected format: {success: true, data: {imageUrl: "..."}, status: 200}
             final data = response.data;
             if (data is Map) {
-              // Format: {success: true, data: {imageUrl: "..."}}
               if (data.containsKey('data') && data['data'] is Map) {
                 final dataMap = data['data'] as Map<String, dynamic>;
                 if (dataMap.containsKey('imageUrl')) {
-                  final imageUrl = dataMap['imageUrl'] as String;
-                  print('✅ Extracted imageUrl: $imageUrl');
-                  return imageUrl;
+                  return dataMap['imageUrl'] as String;
                 } else if (dataMap.containsKey('url')) {
                   return dataMap['url'] as String;
                 } else if (dataMap.containsKey('photoUrl')) {
                   return dataMap['photoUrl'] as String;
                 }
               }
-              // Format: direct fields (fallback)
               if (data.containsKey('imageUrl')) {
                 return data['imageUrl'] as String;
               } else if (data.containsKey('url')) {
@@ -395,13 +313,10 @@ class ContactApiService {
           lastError = e;
           final statusCode = e.response?.statusCode;
           
-          // If it's not 400 (InvalidFile), it might be a different error
           if (statusCode != null && statusCode != 400) {
             throw _handleError(e);
           }
           
-          // If 400, try next field name
-          print('⚠️ Field name $fieldName failed with 400, trying next...');
           continue;
         }
       }
