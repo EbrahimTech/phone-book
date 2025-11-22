@@ -54,8 +54,8 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
             'Contacts',
             style: TextStyle(
               color: AppTheme.darkGray,
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ),
@@ -67,13 +67,13 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
               child: GestureDetector(
                 onTap: _openAddContactSheet,
                 child: Container(
-                  width: 36,
-                  height: 36,
+                  width: 32,
+                  height: 32,
                   decoration: const BoxDecoration(
                     color: AppTheme.primaryBlue,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.add, color: Colors.white, size: 20),
+                  child: const Icon(Icons.add, color: Colors.white, size: 25),
                 ),
               ),
             ),
@@ -385,7 +385,11 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
         controller: _searchController,
         decoration: InputDecoration(
           hintText: 'Search by name',
-          hintStyle: const TextStyle(color: AppTheme.lightGray, fontSize: 16),
+          hintStyle: const TextStyle(
+            color: Color(0xFFB0B0B0),
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
           prefixIcon: const Icon(Icons.search, color: AppTheme.lightGray),
           filled: true,
           fillColor: AppTheme.cardBackground,
@@ -531,7 +535,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
               style: TextStyle(
                 color: AppTheme.darkGray,
                 fontSize: 18,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 10),
@@ -551,8 +555,8 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                 'Create New Contact',
                 style: TextStyle(
                   color: AppTheme.primaryBlue,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
