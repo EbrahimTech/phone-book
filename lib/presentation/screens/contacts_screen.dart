@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/contact_provider.dart';
 import '../widgets/contact_list_item.dart';
 import 'add_edit_contact_screen.dart';
@@ -18,17 +19,35 @@ class ContactsScreen extends ConsumerStatefulWidget {
 
 class _ContactsScreenState extends ConsumerState<ContactsScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   bool _isSearching = false;
+  bool _isSearchFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchFocusNode.addListener(() {
+      setState(() {
+        _isSearchFocused = _searchFocusNode.hasFocus;
+        if (_isSearchFocused && _searchController.text.isEmpty) {
+          _isSearching = true;
+        } else if (!_isSearchFocused && _searchController.text.isEmpty) {
+          _isSearching = false;
+        }
+      });
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
   void _onSearchChanged(String query) {
     if (query.isEmpty) {
-      setState(() => _isSearching = false);
+      setState(() => _isSearching = _isSearchFocused);
       ref.read(searchProvider.notifier).clearSearch();
     } else {
       setState(() => _isSearching = true);
@@ -41,55 +60,64 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
     final contactsState = ref.watch(contactsProvider);
     final searchState = ref.watch(searchProvider);
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
+    return GestureDetector(
+      onTap: () {
+        if (_searchFocusNode.hasFocus) {
+          _searchFocusNode.unfocus();
+        }
+      },
+      behavior: HitTestBehavior.translucent,
+      child: Scaffold(
         backgroundColor: AppTheme.backgroundColor,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 64,
-        centerTitle: false,
-        title: Align(
-          alignment: Alignment.centerLeft,
-          child: const Text(
-            'Contacts',
-            style: TextStyle(
-              color: AppTheme.darkGray,
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-        actions: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: GestureDetector(
-                onTap: _openAddContactSheet,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.primaryBlue,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.add, color: Colors.white, size: 25),
-                ),
+        appBar: AppBar(
+          backgroundColor: AppTheme.backgroundColor,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          toolbarHeight: 64,
+          centerTitle: false,
+          title: Align(
+            alignment: Alignment.centerLeft,
+            child: const Text(
+              'Contacts',
+              style: TextStyle(
+                color: Color(0xFF202020),
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(contactsProvider.notifier).refreshContacts(),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildSearchBar(),
-              const SizedBox(height: 16),
-              Expanded(child: _buildBody(contactsState, searchState)),
-            ],
+          actions: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: GestureDetector(
+                  onTap: _openAddContactSheet,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: AppTheme.primaryBlue,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 25),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        body: RefreshIndicator(
+          onRefresh: () =>
+              ref.read(contactsProvider.notifier).refreshContacts(),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildSearchBar(),
+                const SizedBox(height: 16),
+                Expanded(child: _buildBody(contactsState, searchState)),
+              ],
+            ),
           ),
         ),
       ),
@@ -208,21 +236,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
     }
 
     if (searchState.filteredContacts.isEmpty) {
-      return const Center(child: Text('No contacts found'));
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      itemCount: searchState.filteredContacts.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) =>
-          _buildContactResultCard(searchState.filteredContacts[index]),
-    );
-  }
-
-  Widget _buildSearchHistory(searchState) {
-    if (searchState.searchHistory.isEmpty) {
-      return const Center(child: Text('No search history'));
+      return _buildNoResults();
     }
 
     return ListView(
@@ -234,32 +248,204 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Recent Searches',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        await ContactLocalService.clearSearchHistory();
-                        ref.read(searchProvider.notifier).clearSearch();
-                      },
-                      child: const Text('Clear'),
-                    ),
-                  ],
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                child: Text(
+                  'TOP NAME MATCHES',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFB0B0B0),
+                  ),
                 ),
               ),
               Divider(
                 height: 1,
                 thickness: 1,
+                indent: 16,
+                endIndent: 16,
                 color: Color(0xFFE8E8E8).withValues(alpha: 0.5),
               ),
+              ...List.generate(searchState.filteredContacts.length, (index) {
+                final contact = searchState.filteredContacts[index];
+                final isLast = index == searchState.filteredContacts.length - 1;
+
+                return Column(
+                  children: [
+                    _buildSearchResultItem(contact),
+                    if (!isLast)
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        indent: 72,
+                        endIndent: 16,
+                        color: Color(0xFFE8E8E8).withValues(alpha: 0.5),
+                      ),
+                  ],
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchResultItem(Contact contact) {
+    return GestureDetector(
+      onTap: () => _navigateToProfile(contact),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundImage:
+                  contact.photoUrl != null && contact.photoUrl!.isNotEmpty
+                  ? CachedNetworkImageProvider(contact.photoUrl!)
+                  : null,
+              backgroundColor: AppTheme.primaryBlue,
+              child: contact.photoUrl == null || contact.photoUrl!.isEmpty
+                  ? Text(
+                      contact.firstLetter,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    contact.fullName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF3D3D3D),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    contact.phoneNumber,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: AppTheme.lightGray,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoResults() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          const SizedBox(height: 40),
+          Container(
+            width: 85,
+            height: 85,
+            decoration: const BoxDecoration(
+              color: Color(0xFFD1D1D6),
+              shape: BoxShape.circle,
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CustomPaint(
+                  size: const Size(44, 44),
+                  painter: _MagnifyingGlassWithXPainter(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'No Results',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontSize: 30,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF202020),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 36),
+            child: Text(
+              'The user you are looking for could not be found.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF3D3D3D),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchHistory(searchState) {
+    if (searchState.searchHistory.isEmpty) {
+      return const Center(child: Text('No search history'));
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'SEARCH HISTORY',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFB0B0B0),
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await ContactLocalService.clearSearchHistory();
+                  ref.read(searchProvider.notifier).clearSearch();
+                },
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(64, 36),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'Clear All',
+                  style: TextStyle(
+                    color: AppTheme.primaryBlue,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    decoration: TextDecoration.underline,
+                    decorationColor: AppTheme.primaryBlue,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: _cardDecoration(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               ...List.generate(searchState.searchHistory.length, (index) {
                 final query = searchState.searchHistory[index];
                 final isLast = index == searchState.searchHistory.length - 1;
@@ -267,18 +453,36 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                 return Column(
                   children: [
                     ListTile(
-                      leading: const Icon(
-                        Icons.history,
-                        color: AppTheme.lightGray,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      leading: GestureDetector(
+                        onTap: () async {
+                          await ref
+                              .read(searchProvider.notifier)
+                              .removeFromHistory(query);
+                        },
+                        child: const Icon(
+                          Icons.close,
+                          color: Color(0xFF202020),
+                          size: 20,
+                        ),
                       ),
                       title: Text(
                         query,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xFF4F4F4F),
+                        ),
                       ),
                       onTap: () {
                         _searchController.text = query;
                         _onSearchChanged(query);
                       },
+                      dense: true,
+                      minLeadingWidth: 8,
                     ),
                     if (!isLast)
                       Divider(
@@ -318,7 +522,12 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
     );
   }
 
-  void _navigateToProfile(Contact contact) {
+  void _navigateToProfile(Contact contact) async {
+    final searchState = ref.read(searchProvider);
+    if (searchState.query.isNotEmpty) {
+      await ref.read(searchProvider.notifier).addToHistory(searchState.query);
+    }
+
     showModalBottomSheet<dynamic>(
       context: context,
       isScrollControlled: true,
@@ -454,18 +663,20 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                           ),
                           Text(
                             'Delete Contact',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Are you sure you want to delete this contact?',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                            ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
@@ -473,20 +684,29 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                             children: [
                               Expanded(
                                 child: OutlinedButton(
-                                  onPressed: () => Navigator.pop(context, false),
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
                                   style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 18),
-                                    side: const BorderSide(color: Colors.black, width: 1.4),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 18,
+                                    ),
+                                    side: const BorderSide(
+                                      color: Colors.black,
+                                      width: 1.4,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(28),
                                     ),
                                   ),
                                   child: Text(
                                     'No',
-                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black,
+                                        ),
                                   ),
                                 ),
                               ),
@@ -495,7 +715,9 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                                 child: ElevatedButton(
                                   onPressed: () => Navigator.pop(context, true),
                                   style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 18),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 18,
+                                    ),
                                     backgroundColor: Colors.black,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(28),
@@ -503,10 +725,13 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                                   ),
                                   child: Text(
                                     'Yes',
-                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
                                   ),
                                 ),
                               ),
@@ -544,6 +769,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: TextField(
         controller: _searchController,
+        focusNode: _searchFocusNode,
         decoration: InputDecoration(
           hintText: 'Search by name',
           hintStyle: const TextStyle(
@@ -551,7 +777,12 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
-          prefixIcon: const Icon(Icons.search, color: AppTheme.lightGray),
+          prefixIcon: Icon(
+            Icons.search,
+            color: _isSearchFocused
+                ? const Color(0xFF202020)
+                : const Color(0xFFB0B0B0),
+          ),
           filled: true,
           fillColor: AppTheme.cardBackground,
           contentPadding: const EdgeInsets.symmetric(vertical: 14),
@@ -564,20 +795,30 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(
-              color: AppTheme.primaryBlue,
-              width: 1.2,
+            borderSide: BorderSide(
+              color: AppTheme.lightGray.withValues(alpha: 0.25),
+              width: 1,
             ),
           ),
         ),
-        style: const TextStyle(color: AppTheme.darkGray, fontSize: 16),
+        style: const TextStyle(
+          color: Color(0xFF3D3D3D),
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
         onChanged: (value) {
           if (value.isNotEmpty) {
             setState(() => _isSearching = true);
             _onSearchChanged(value);
           } else {
-            setState(() => _isSearching = false);
+            setState(() => _isSearching = _isSearchFocused);
             ref.read(searchProvider.notifier).clearSearch();
+          }
+        },
+        onSubmitted: (value) async {
+          if (value.trim().isNotEmpty) {
+            await ref.read(searchProvider.notifier).search(value.trim());
+            await ref.read(searchProvider.notifier).addToHistory(value.trim());
           }
         },
       ),
@@ -627,13 +868,6 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
           }),
         ],
       ),
-    );
-  }
-
-  Widget _buildContactResultCard(Contact contact) {
-    return Container(
-      decoration: _cardDecoration(),
-      child: _buildContactTile(contact),
     );
   }
 
@@ -719,4 +953,57 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
       ),
     );
   }
+}
+
+class _MagnifyingGlassWithXPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final center = Offset(size.width / 2.5, size.height / 2.5);
+    final radius = size.width * 0.38;
+
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    final startAngle = 2.8;
+    final sweepAngle = 2 * 3.14159 - 0.7;
+    canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
+
+    final handleLength = radius * 1.1;
+    final handleStart = Offset(
+      center.dx + radius * 0.707,
+      center.dy + radius * 0.707,
+    );
+    final handleEnd = Offset(
+      handleStart.dx + handleLength * 0.707,
+      handleStart.dy + handleLength * 0.707,
+    );
+
+    canvas.drawLine(handleStart, handleEnd, paint);
+
+    final xSize = radius * 0.65;
+    final xPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawLine(
+      Offset(center.dx - xSize / 2, center.dy - xSize / 2),
+      Offset(center.dx + xSize / 2, center.dy + xSize / 2),
+      xPaint,
+    );
+    canvas.drawLine(
+      Offset(center.dx - xSize / 2, center.dy + xSize / 2),
+      Offset(center.dx + xSize / 2, center.dy - xSize / 2),
+      xPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

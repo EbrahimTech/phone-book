@@ -202,12 +202,10 @@ class SearchNotifier extends StateNotifier<SearchState> {
     
     try {
       final results = await _repository.searchContacts(query);
-      await ContactLocalService.addSearchToHistory(query);
       
       state = state.copyWith(
         filteredContacts: results,
         isSearching: false,
-        searchHistory: ContactLocalService.getSearchHistory(),
       );
     } catch (e) {
       state = state.copyWith(isSearching: false);
@@ -219,6 +217,22 @@ class SearchNotifier extends StateNotifier<SearchState> {
       query: '',
       filteredContacts: [],
       isSearching: false,
+      searchHistory: ContactLocalService.getSearchHistory(),
+    );
+  }
+
+  Future<void> removeFromHistory(String query) async {
+    await ContactLocalService.removeFromSearchHistory(query);
+    state = state.copyWith(
+      searchHistory: ContactLocalService.getSearchHistory(),
+    );
+  }
+
+  Future<void> addToHistory(String query) async {
+    if (query.trim().isEmpty) return;
+    await ContactLocalService.addSearchToHistory(query.trim());
+    state = state.copyWith(
+      searchHistory: ContactLocalService.getSearchHistory(),
     );
   }
 }

@@ -74,5 +74,15 @@ class ContactLocalService {
     if (_searchHistoryBox == null) return;
     await _searchHistoryBox!.delete('history');
   }
+
+  /// Remove item from search history
+  static Future<void> removeFromSearchHistory(String query) async {
+    if (!_initialized) await init();
+    if (_searchHistoryBox == null) return;
+    
+    final history = _searchHistoryBox!.get('history', defaultValue: <String>[]) ?? [];
+    history.remove(query.trim());
+    await _searchHistoryBox!.put('history', history);
+  }
 }
 
