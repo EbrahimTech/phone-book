@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
       title: 'Phone Book',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
       home: const ContactsScreen(),
       debugShowCheckedModeBanner: false,
     );

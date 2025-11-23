@@ -142,6 +142,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
         body: RefreshIndicator(
           onRefresh: () =>
               ref.read(contactsProvider.notifier).refreshContacts(),
+          color: AppTheme.primaryBlue,
           child: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
