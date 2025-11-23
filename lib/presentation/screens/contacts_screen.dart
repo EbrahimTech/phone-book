@@ -1065,54 +1065,82 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 110,
-              height: 110,
-              decoration: const BoxDecoration(
-                color: AppTheme.emptyStateIconGray,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.person_outline,
-                size: 58,
-                color: Color(0xFFB9B9BE),
-              ),
+    final avatarSize = ResponsiveUtils.getAvatarSize(context);
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveUtils.getHorizontalPadding(context) * 2,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 120,
+              tablet: 140,
+              desktop: 160,
             ),
-            const SizedBox(height: 24),
-            const Text(
-              'No Contacts',
-              style: TextStyle(
-                color: AppTheme.darkGray,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+          ),
+          Container(
+            width: avatarSize,
+            height: avatarSize,
+            decoration: const BoxDecoration(
+              color: AppTheme.emptyStateIconGray,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.person,
+              size: avatarSize * 0.5,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'No Contacts',
+            style: TextStyle(
+              color: const Color(0xFF202020),
+              fontSize: ResponsiveUtils.getResponsiveFontSize(
+                context,
+                mobile: 30,
+                tablet: 34,
+                desktop: 38,
               ),
+              fontWeight: FontWeight.w800,
             ),
-            const SizedBox(height: 10),
-            const Text(
-              'Contacts you\'ve added will appear here.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF4A4A4A), fontSize: 15),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Contacts you\'ve added will appear here.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontSize: ResponsiveUtils.getResponsiveFontSize(
+                context,
+                mobile: 16,
+                tablet: 17,
+                desktop: 18,
+              ),
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF3D3D3D),
             ),
-            const SizedBox(height: 22),
-            GestureDetector(
-              onTap: _openAddContactSheet,
-              child: const Text(
-                'Create New Contact',
-                style: TextStyle(
-                  color: AppTheme.primaryBlue,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+          ),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: _openAddContactSheet,
+            child: Text(
+              'Create New Contact',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontSize: ResponsiveUtils.getResponsiveFontSize(
+                  context,
+                  mobile: 16,
+                  tablet: 17,
+                  desktop: 18,
                 ),
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF0075FF),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
