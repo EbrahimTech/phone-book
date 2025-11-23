@@ -657,6 +657,8 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
       await ref.read(searchProvider.notifier).addToHistory(searchState.query);
     }
 
+    if (!mounted) return;
+
     showModalBottomSheet<dynamic>(
       context: context,
       isScrollControlled: true,
