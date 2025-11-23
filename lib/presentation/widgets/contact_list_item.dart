@@ -43,23 +43,51 @@ class ContactListItem extends StatelessWidget {
       child: Container(
         color: Colors.white,
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          leading: CircleAvatar(
-            radius: 28,
-            backgroundImage: contact.photoUrl != null && contact.photoUrl!.isNotEmpty
-                ? CachedNetworkImageProvider(contact.photoUrl!)
-                : null,
-            backgroundColor: Colors.blue,
-            child: contact.photoUrl == null || contact.photoUrl!.isEmpty
-                ? Text(
-                    contact.firstLetter,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          leading: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundImage:
+                    contact.photoUrl != null && contact.photoUrl!.isNotEmpty
+                    ? CachedNetworkImageProvider(contact.photoUrl!)
+                    : null,
+                backgroundColor: Colors.blue,
+                child: contact.photoUrl == null || contact.photoUrl!.isEmpty
+                    ? Text(
+                        contact.firstLetter,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      )
+                    : null,
+              ),
+              if (contact.isInDeviceContacts)
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF007AFF),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
-                  )
-                : null,
+                    child: const Icon(
+                      Icons.phone,
+                      color: Colors.white,
+                      size: 12,
+                    ),
+                  ),
+                ),
+            ],
           ),
           title: Text(
             contact.fullName,
@@ -71,22 +99,12 @@ class ContactListItem extends StatelessWidget {
           ),
           subtitle: Text(
             contact.phoneNumber,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF6D6D6D),
-            ),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF6D6D6D)),
           ),
-          trailing: contact.isInDeviceContacts
-              ? const Icon(
-                  Icons.phone_android,
-                  color: Colors.green,
-                  size: 20,
-                )
-              : null,
+          trailing: null,
           onTap: onTap,
         ),
       ),
     );
   }
 }
-
