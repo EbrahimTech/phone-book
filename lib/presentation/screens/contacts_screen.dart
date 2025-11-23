@@ -319,7 +319,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
   }
 
   void _navigateToProfile(Contact contact) {
-    showModalBottomSheet<bool>(
+    showModalBottomSheet<dynamic>(
       context: context,
       isScrollControlled: true,
       isDismissible: true,
@@ -358,16 +358,52 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
     ).then((result) {
       if (result == true) {
         ref.read(contactsProvider.notifier).refreshContacts();
+      } else if (result == 'deleted') {
+        ref.read(contactsProvider.notifier).refreshContacts();
+        if (mounted) {
+          SnackBarUtils.showSuccess(context, 'User is deleted!');
+        }
       }
     });
   }
 
   void _navigateToEdit(Contact contact) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddEditContactScreen(contact: contact),
-      ),
+    showModalBottomSheet<dynamic>(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(context).pop(),
+          child: Stack(
+            children: [
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () {},
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom,
+                    ),
+                    child: FractionallySizedBox(
+                      heightFactor: 0.94,
+                      child: ProfileScreen(
+                        contactId: contact.id!,
+                        contact: contact,
+                        initialEditMode: true,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     ).then((result) {
       if (result == true) {
         ref.read(contactsProvider.notifier).refreshContacts();
@@ -376,28 +412,129 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
   }
 
   Future<void> _deleteContact(String id) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Contact'),
-        content: const Text('Are you sure you want to delete this contact?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.85),
+      builder: (context) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(context).pop(),
+          child: Stack(
+            children: [
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () {},
+                  child: FractionallySizedBox(
+                    heightFactor: 0.29,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          topRight: Radius.circular(24),
+                        ),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 4,
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE7E7E7),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          Text(
+                            'Delete Contact',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Are you sure you want to delete this contact?',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 18),
+                                    side: const BorderSide(color: Colors.black, width: 1.4),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(28),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'No',
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 18),
+                                    backgroundColor: Colors.black,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(28),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Yes',
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+        );
+      },
     );
 
     if (confirmed == true) {
-      await ref.read(contactsProvider.notifier).deleteContact(id);
-      if (mounted) {
-        SnackBarUtils.showSuccess(context, 'Contact deleted');
+      try {
+        await ref.read(contactsProvider.notifier).deleteContact(id);
+        if (mounted) {
+          ref.read(contactsProvider.notifier).refreshContacts();
+          SnackBarUtils.showSuccess(context, 'User is deleted!');
+        }
+      } catch (e) {
+        if (mounted) {
+          SnackBarUtils.showError(context, 'Error: ${e.toString()}');
+        }
       }
     }
   }

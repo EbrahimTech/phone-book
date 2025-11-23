@@ -13,8 +13,14 @@ import '../../core/theme/app_theme.dart';
 class ProfileScreen extends ConsumerStatefulWidget {
   final String contactId;
   final Contact? contact;
+  final bool initialEditMode;
 
-  const ProfileScreen({super.key, required this.contactId, this.contact});
+  const ProfileScreen({
+    super.key,
+    required this.contactId,
+    this.contact,
+    this.initialEditMode = false,
+  });
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
@@ -39,6 +45,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void initState() {
     super.initState();
     _dominantColor = null;
+    _isEditing = widget.initialEditMode;
 
     if (widget.contact != null) {
       setState(() {
@@ -146,7 +153,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (pickedFile != null) {
       final file = File(pickedFile.path);
 
-      // Validate image
       if (!ImageUtils.isValidImage(file.path)) {
         if (mounted) {
           SnackBarUtils.showError(context, 'Please select a PNG or JPG image');
@@ -164,7 +170,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _dominantColor = null; // Reset color while extracting
       });
 
-      // Extract dominant color from the selected image
       _extractDominantColor(imageToUse);
     }
   }
@@ -306,8 +311,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     if (!_formKey.currentState!.validate()) return;
 
-    // Save contact
-
     setState(() {
       _isSaving = true;
     });
@@ -323,12 +326,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             imageFile: _hasImageChanged ? _selectedImage : null,
           );
 
-      setState(() {
-        _isSaving = false;
-      });
-
       if (mounted) {
-        await _loadContact();
         ref.read(contactsProvider.notifier).refreshContacts();
         SnackBarUtils.showSuccess(context, 'User is updated!');
         Navigator.pop(context, true);
@@ -347,37 +345,143 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _deleteContact() async {
     if (_contact == null) return;
 
-    // Delete contact
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Contact'),
-        content: const Text('Are you sure you want to delete this contact?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.85),
+      builder: (context) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(context).pop(),
+          child: Stack(
+            children: [
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () {},
+                  child: FractionallySizedBox(
+                    heightFactor: 0.29,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          topRight: Radius.circular(24),
+                        ),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 4,
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE7E7E7),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          Text(
+                            'Delete Contact',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Are you sure you want to delete this contact?',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 18,
+                                    ),
+                                    side: const BorderSide(
+                                      color: Colors.black,
+                                      width: 1.4,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(28),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'No',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 18,
+                                    ),
+                                    backgroundColor: Colors.black,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(28),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Yes',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+        );
+      },
     );
 
     if (confirmed == true) {
       try {
         await ref.read(contactsProvider.notifier).deleteContact(_contact!.id!);
         if (mounted) {
-          Navigator.pop(context, true);
-          SnackBarUtils.showSuccess(context, 'Contact deleted');
+          Navigator.pop(context, 'deleted');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+          SnackBarUtils.showError(context, 'Error: ${e.toString()}');
         }
       }
     }
@@ -386,7 +490,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _saveToDevice() async {
     if (_contact == null) return;
 
-    // Save to device
     try {
       final repository = ref.read(contactRepositoryProvider);
       await repository.saveContactToDevice(_contact!);
