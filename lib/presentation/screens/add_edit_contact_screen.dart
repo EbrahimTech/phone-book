@@ -8,6 +8,7 @@ import '../providers/contact_provider.dart';
 import '../../domain/entities/contact.dart';
 import '../../core/utils/image_utils.dart';
 import '../../core/utils/color_utils.dart';
+import '../../core/utils/snackbar_utils.dart';
 import '../../core/theme/app_theme.dart';
 
 class AddEditContactScreen extends ConsumerStatefulWidget {
@@ -98,9 +99,7 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
       // Validate image
       if (!ImageUtils.isValidImage(file.path)) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a PNG or JPG image')),
-          );
+          SnackBarUtils.showError(context, 'Please select a PNG or JPG image');
         }
         return;
       }
@@ -231,9 +230,7 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+        SnackBarUtils.showError(context, 'Error: ${e.toString()}');
       }
     }
   }

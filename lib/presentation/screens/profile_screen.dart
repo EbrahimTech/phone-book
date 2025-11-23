@@ -7,6 +7,7 @@ import '../providers/contact_provider.dart';
 import '../../domain/entities/contact.dart';
 import '../../core/utils/image_utils.dart';
 import '../../core/utils/color_utils.dart';
+import '../../core/utils/snackbar_utils.dart';
 import '../../core/theme/app_theme.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -26,6 +27,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isSaving = false;
   bool _isExtractingColor = false;
   bool _hasImageChanged = false;
+  bool _isEditing = false;
 
   final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
@@ -95,8 +97,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading contact: ${e.toString()}')),
+        SnackBarUtils.showError(
+          context,
+          'Error loading contact: ${e.toString()}',
         );
       }
     }
@@ -146,9 +149,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       // Validate image
       if (!ImageUtils.isValidImage(file.path)) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a PNG or JPG image')),
-          );
+          SnackBarUtils.showError(context, 'Please select a PNG or JPG image');
         }
         return;
       }
@@ -327,11 +328,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       });
 
       if (mounted) {
-        Navigator.pop(context, true);
+        await _loadContact();
         ref.read(contactsProvider.notifier).refreshContacts();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Contact updated')));
+        SnackBarUtils.showSuccess(context, 'User is updated!');
+        Navigator.pop(context, true);
       }
     } catch (e) {
       setState(() {
@@ -339,9 +339,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+        SnackBarUtils.showError(context, 'Error: ${e.toString()}');
       }
     }
   }
@@ -373,9 +371,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         await ref.read(contactsProvider.notifier).deleteContact(_contact!.id!);
         if (mounted) {
           Navigator.pop(context, true);
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Contact deleted')));
+          SnackBarUtils.showSuccess(context, 'Contact deleted');
         }
       } catch (e) {
         if (mounted) {
@@ -396,16 +392,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await repository.saveContactToDevice(_contact!);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Contact saved to device')),
-        );
-        await _loadContact();
+        setState(() {
+          _contact = _contact!.copyWith(isInDeviceContacts: true);
+        });
+        SnackBarUtils.showSuccess(context, 'User is added to your phone!');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+        SnackBarUtils.showError(context, 'Error: ${e.toString()}');
       }
     }
   }
@@ -486,19 +480,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     children: [
                                       _buildAvatar(),
                                       const SizedBox(height: 14),
-                                      GestureDetector(
-                                        onTap: _showPhotoSourceSheet,
-                                        child: Text(
-                                          _hasPhoto
-                                              ? 'Change Photo'
-                                              : 'Add Photo',
-                                          style: const TextStyle(
-                                            color: AppTheme.primaryBlue,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
+                                      if (_isEditing)
+                                        GestureDetector(
+                                          onTap: _showPhotoSourceSheet,
+                                          child: Text(
+                                            _hasPhoto
+                                                ? 'Change Photo'
+                                                : 'Add Photo',
+                                            style: const TextStyle(
+                                              color: AppTheme.primaryBlue,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
-                                      ),
                                     ],
                                   ),
                                 ),
@@ -516,6 +511,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         color: Color(0xFF202020),
                                         fontSize: 16,
                                       ),
+                                      enabled: _isEditing,
                                       validator: (value) {
                                         if (value == null ||
                                             value.trim().isEmpty) {
@@ -533,6 +529,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         color: Color(0xFF202020),
                                         fontSize: 16,
                                       ),
+                                      enabled: _isEditing,
                                       validator: (value) {
                                         if (value == null ||
                                             value.trim().isEmpty) {
@@ -553,6 +550,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         color: Color(0xFF202020),
                                         fontSize: 16,
                                       ),
+                                      enabled: _isEditing,
                                       validator: (value) {
                                         if (value == null ||
                                             value.trim().isEmpty) {
@@ -565,23 +563,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   ],
                                 ),
 
-                                const SizedBox(height: 48),
+                                if (!_isEditing) ...[
+                                  const SizedBox(height: 48),
 
-                                if (!_contact!.isInDeviceContacts)
                                   Container(
                                     width: double.infinity,
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(28),
                                       border: Border.all(
-                                        color: Colors.black,
+                                        color: _contact!.isInDeviceContacts
+                                            ? const Color(0xFFD1D1D1)
+                                            : Colors.black,
                                         width: 1.4,
                                       ),
                                     ),
                                     child: Material(
                                       color: Colors.transparent,
                                       child: InkWell(
-                                        onTap: _saveToDevice,
+                                        onTap: _contact!.isInDeviceContacts
+                                            ? null
+                                            : _saveToDevice,
                                         borderRadius: BorderRadius.circular(28),
                                         child: Padding(
                                           padding: const EdgeInsets.symmetric(
@@ -592,16 +594,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: [
-                                              const Icon(
+                                              Icon(
                                                 Icons.bookmark_border,
-                                                color: AppTheme.darkGray,
+                                                color:
+                                                    _contact!.isInDeviceContacts
+                                                    ? const Color(0xFFD1D1D1)
+                                                    : AppTheme.darkGray,
                                                 size: 24,
                                               ),
                                               const SizedBox(width: 10),
-                                              const Text(
+                                              Text(
                                                 'Save to My Phone Contact',
                                                 style: TextStyle(
-                                                  color: AppTheme.darkGray,
+                                                  color:
+                                                      _contact!
+                                                          .isInDeviceContacts
+                                                      ? const Color(0xFFD1D1D1)
+                                                      : AppTheme.darkGray,
                                                   fontSize: 17,
                                                   fontWeight: FontWeight.w500,
                                                 ),
@@ -612,6 +621,47 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       ),
                                     ),
                                   ),
+
+                                  if (_contact!.isInDeviceContacts)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            width: 16,
+                                            height: 16,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: const Color(0xFF6D6D6D),
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            child: Center(
+                                              child: const Text(
+                                                'i',
+                                                style: TextStyle(
+                                                  color: Color(0xFF6D6D6D),
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          const Text(
+                                            'This contact is already saved your phone.',
+                                            style: TextStyle(
+                                              color: Color(0xFF6D6D6D),
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
 
                                 const SizedBox(height: 24),
                               ],
@@ -631,17 +681,52 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildSheetHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-      child: Row(
-        children: [
-          if (_hasChanges || _hasImageChanged)
+    if (_isEditing) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+        child: Row(
+          children: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _isEditing = false;
+                  _selectedImage = null;
+                  _hasImageChanged = false;
+                  if (_contact != null) {
+                    _firstNameController.text = _contact!.firstName;
+                    _lastNameController.text = _contact!.lastName;
+                    _phoneController.text = _contact!.phoneNumber;
+                  }
+                });
+              },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                minimumSize: const Size(64, 40),
+                alignment: Alignment.centerLeft,
+              ),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: AppTheme.primaryBlue, fontSize: 17),
+              ),
+            ),
+            Expanded(
+              child: const Center(
+                child: Text(
+                  'Edit Contact',
+                  style: TextStyle(
+                    color: AppTheme.darkGray,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
             TextButton(
               onPressed: _hasChanges && !_isSaving ? _saveContact : null,
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 minimumSize: const Size(64, 40),
-                alignment: Alignment.centerLeft,
+                alignment: Alignment.centerRight,
               ),
               child: Text(
                 'Done',
@@ -653,36 +738,94 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-            )
-          else
-            const SizedBox(width: 64),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      child: Row(
+        children: [
+          const SizedBox(width: 64),
           const Spacer(),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: AppTheme.darkGray),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            color: Colors.white,
+            elevation: 8,
+            offset: const Offset(-20, 24),
+            constraints: const BoxConstraints(minWidth: 180, maxWidth: 220),
             onSelected: (value) {
               if (value == 'edit') {
+                setState(() {
+                  _isEditing = true;
+                });
               } else if (value == 'delete') {
                 _deleteContact();
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'edit',
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.edit, size: 20, color: AppTheme.darkGray),
-                    SizedBox(width: 8),
-                    Text('Edit'),
+                    const Text(
+                      'Edit',
+                      style: TextStyle(
+                        color: AppTheme.darkGray,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.edit_outlined,
+                          size: 20,
+                          color: AppTheme.darkGray,
+                        ),
+                        const SizedBox(height: 1),
+                        Container(
+                          width: 16,
+                          height: 1,
+                          color: AppTheme.darkGray,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              const PopupMenuDivider(height: 1, thickness: 1),
+              PopupMenuItem(
                 value: 'delete',
-                child: Row(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.delete, size: 20, color: Colors.red),
+                    Text(
+                      'Delete',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
                     SizedBox(width: 8),
-                    Text('Delete', style: TextStyle(color: Colors.red)),
+                    Icon(Icons.delete_outline, size: 20, color: Colors.red),
                   ],
                 ),
               ),

@@ -6,6 +6,7 @@ import 'add_edit_contact_screen.dart';
 import 'profile_screen.dart';
 import '../../data/datasources/contact_local_service.dart';
 import '../../domain/entities/contact.dart';
+import '../../core/utils/snackbar_utils.dart';
 import '../../core/theme/app_theme.dart';
 
 class ContactsScreen extends ConsumerStatefulWidget {
@@ -175,13 +176,10 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
               const SizedBox(height: 16),
               TextButton.icon(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Please check Swagger: http://146.59.52.68:11235/swagger',
-                      ),
-                      duration: Duration(seconds: 5),
-                    ),
+                  SnackBarUtils.showInfo(
+                    context,
+                    'Please check Swagger: http://146.59.52.68:11235/swagger',
+                    duration: const Duration(seconds: 5),
                   );
                 },
                 icon: const Icon(Icons.open_in_browser),
@@ -399,9 +397,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
     if (confirmed == true) {
       await ref.read(contactsProvider.notifier).deleteContact(id);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Contact deleted')));
+        SnackBarUtils.showSuccess(context, 'Contact deleted');
       }
     }
   }
