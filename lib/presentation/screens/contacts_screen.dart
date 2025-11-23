@@ -694,6 +694,8 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
         if (mounted) {
           SnackBarUtils.showSuccess(context, 'User is deleted!');
         }
+      } else if (result == 'saved_to_device') {
+        ref.read(contactsProvider.notifier).refreshContacts();
       }
     });
   }

@@ -84,15 +84,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _loadContactWithDeviceStatus(Contact contact) async {
     try {
+      // Update UI immediately with cached status (faster)
+      _updateContactState(contact);
+
+      // Check device status in background (non-blocking)
       final repository = ref.read(contactRepositoryProvider);
       final isInDevice = await repository.isContactInDevice(
         contact.phoneNumber,
       );
-      final contactWithStatus = contact.copyWith(
-        isInDeviceContacts: isInDevice,
-      );
 
-      _updateContactState(contactWithStatus);
+      if (mounted) {
+        final contactWithStatus = contact.copyWith(
+          isInDeviceContacts: isInDevice,
+        );
+        _updateContactState(contactWithStatus);
+      }
     } catch (e) {
       _updateContactState(contact);
     }
@@ -505,6 +511,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           _contact = _contact!.copyWith(isInDeviceContacts: true);
         });
         SnackBarUtils.showSuccess(context, 'User is added to your phone!');
+
+        // Notify parent to refresh contacts list (without closing Profile Screen)
+        // Use a callback to update the contacts list in the background
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          // Refresh contacts list in parent screen
+          final contactsNotifier = ref.read(contactsProvider.notifier);
+          contactsNotifier.refreshContacts();
+        });
       }
     } catch (e) {
       if (mounted) {
