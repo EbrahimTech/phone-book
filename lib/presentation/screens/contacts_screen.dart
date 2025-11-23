@@ -8,6 +8,7 @@ import 'profile_screen.dart';
 import '../../data/datasources/contact_local_service.dart';
 import '../../domain/entities/contact.dart';
 import '../../core/utils/snackbar_utils.dart';
+import '../../core/utils/responsive_utils.dart';
 import '../../core/theme/app_theme.dart';
 
 class ContactsScreen extends ConsumerStatefulWidget {
@@ -73,15 +74,25 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
           backgroundColor: AppTheme.backgroundColor,
           elevation: 0,
           scrolledUnderElevation: 0,
-          toolbarHeight: 64,
+          toolbarHeight: ResponsiveUtils.getResponsiveValue(
+            context,
+            mobile: 64,
+            tablet: 72,
+            desktop: 80,
+          ),
           centerTitle: false,
           title: Align(
             alignment: Alignment.centerLeft,
-            child: const Text(
+            child: Text(
               'Contacts',
               style: TextStyle(
-                color: Color(0xFF202020),
-                fontSize: 30,
+                color: const Color(0xFF202020),
+                fontSize: ResponsiveUtils.getResponsiveFontSize(
+                  context,
+                  mobile: 30,
+                  tablet: 34,
+                  desktop: 38,
+                ),
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -90,17 +101,38 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
             Align(
               alignment: Alignment.centerRight,
               child: Padding(
-                padding: const EdgeInsets.only(right: 16),
+                padding: EdgeInsets.only(
+                  right: ResponsiveUtils.getHorizontalPadding(context),
+                ),
                 child: GestureDetector(
                   onTap: _openAddContactSheet,
                   child: Container(
-                    width: 32,
-                    height: 32,
+                    width: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 32,
+                      tablet: 36,
+                      desktop: 40,
+                    ),
+                    height: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 32,
+                      tablet: 36,
+                      desktop: 40,
+                    ),
                     decoration: const BoxDecoration(
                       color: AppTheme.primaryBlue,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.add, color: Colors.white, size: 25),
+                    child: Icon(
+                      Icons.add,
+                      color: Colors.white,
+                      size: ResponsiveUtils.getResponsiveValue(
+                        context,
+                        mobile: 25,
+                        tablet: 28,
+                        desktop: 32,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -111,12 +143,29 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
           onRefresh: () =>
               ref.read(contactsProvider.notifier).refreshContacts(),
           child: SafeArea(
-            child: Column(
-              children: [
-                _buildSearchBar(),
-                const SizedBox(height: 16),
-                Expanded(child: _buildBody(contactsState, searchState)),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final maxWidth = ResponsiveUtils.getMaxContentWidth(context);
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxWidth),
+                    child: Column(
+                      children: [
+                        _buildSearchBar(),
+                        SizedBox(
+                          height: ResponsiveUtils.getResponsiveValue(
+                            context,
+                            mobile: 16,
+                            tablet: 20,
+                            desktop: 24,
+                          ),
+                        ),
+                        Expanded(child: _buildBody(contactsState, searchState)),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -220,18 +269,21 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
     }
 
     if (_isSearching) {
-      return _buildSearchResults(searchState);
+      return _buildSearchResults(searchState, contactsState);
     }
 
     return _buildGroupedContacts(contactsState);
   }
 
-  Widget _buildSearchResults(searchState) {
+  Widget _buildSearchResults(searchState, ContactsState contactsState) {
     if (searchState.isSearching) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (searchState.query.isEmpty) {
+      if (searchState.searchHistory.isEmpty) {
+        return _buildGroupedContacts(contactsState);
+      }
       return _buildSearchHistory(searchState);
     }
 
@@ -351,10 +403,27 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          const SizedBox(height: 40),
+          SizedBox(
+            height: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 40,
+              tablet: 60,
+              desktop: 80,
+            ),
+          ),
           Container(
-            width: 85,
-            height: 85,
+            width: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 85,
+              tablet: 100,
+              desktop: 120,
+            ),
+            height: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 85,
+              tablet: 100,
+              desktop: 120,
+            ),
             decoration: const BoxDecoration(
               color: Color(0xFFD1D1D6),
               shape: BoxShape.circle,
@@ -363,29 +432,73 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
               alignment: Alignment.center,
               children: [
                 CustomPaint(
-                  size: const Size(44, 44),
+                  size: Size(
+                    ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 44,
+                      tablet: 52,
+                      desktop: 60,
+                    ),
+                    ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 44,
+                      tablet: 52,
+                      desktop: 60,
+                    ),
+                  ),
                   painter: _MagnifyingGlassWithXPainter(),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(
+            height: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 8,
+              tablet: 12,
+              desktop: 16,
+            ),
+          ),
           Text(
             'No Results',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontSize: 30,
+              fontSize: ResponsiveUtils.getResponsiveFontSize(
+                context,
+                mobile: 30,
+                tablet: 34,
+                desktop: 38,
+              ),
               fontWeight: FontWeight.bold,
               color: const Color(0xFF202020),
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(
+            height: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 4,
+              tablet: 6,
+              desktop: 8,
+            ),
+          ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 36),
+            padding: EdgeInsets.symmetric(
+              horizontal: ResponsiveUtils.getResponsiveValue(
+                context,
+                mobile: 36,
+                tablet: 48,
+                desktop: 64,
+              ),
+            ),
             child: Text(
               'The user you are looking for could not be found.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontSize: 16,
+                fontSize: ResponsiveUtils.getResponsiveFontSize(
+                  context,
+                  mobile: 16,
+                  tablet: 17,
+                  desktop: 18,
+                ),
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFF3D3D3D),
               ),
@@ -397,15 +510,26 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
   }
 
   Widget _buildSearchHistory(searchState) {
-    if (searchState.searchHistory.isEmpty) {
-      return const Center(child: Text('No search history'));
-    }
-
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+        ResponsiveUtils.getHorizontalPadding(context),
+        ResponsiveUtils.getVerticalPadding(context) / 2,
+        ResponsiveUtils.getHorizontalPadding(context),
+        ResponsiveUtils.getVerticalPadding(context) * 2,
+      ),
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
+          padding: EdgeInsets.fromLTRB(
+            0,
+            0,
+            0,
+            ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 12,
+              tablet: 16,
+              desktop: 20,
+            ),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -510,7 +634,12 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
     final sortedKeys = grouped.keys.toList()..sort();
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+        ResponsiveUtils.getHorizontalPadding(context),
+        0,
+        ResponsiveUtils.getHorizontalPadding(context),
+        ResponsiveUtils.getVerticalPadding(context) * 2,
+      ),
       itemCount: sortedKeys.length,
       separatorBuilder: (_, __) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
@@ -765,16 +894,42 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
   }
 
   Widget _buildSearchBar() {
+    final horizontalPadding = ResponsiveUtils.getHorizontalPadding(context);
+    final verticalPadding = ResponsiveUtils.getVerticalPadding(context);
+    final fontSize = ResponsiveUtils.getResponsiveFontSize(
+      context,
+      mobile: 16,
+      tablet: 17,
+      desktop: 18,
+    );
+    final iconSize = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 24,
+      tablet: 26,
+      desktop: 28,
+    );
+    final borderRadius = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 14,
+      tablet: 16,
+      desktop: 18,
+    );
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        verticalPadding,
+        horizontalPadding,
+        0,
+      ),
       child: TextField(
         controller: _searchController,
         focusNode: _searchFocusNode,
         decoration: InputDecoration(
           hintText: 'Search by name',
-          hintStyle: const TextStyle(
-            color: Color(0xFFB0B0B0),
-            fontSize: 16,
+          hintStyle: TextStyle(
+            color: const Color(0xFFB0B0B0),
+            fontSize: fontSize,
             fontWeight: FontWeight.w600,
           ),
           prefixIcon: Icon(
@@ -782,28 +937,36 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
             color: _isSearchFocused
                 ? const Color(0xFF202020)
                 : const Color(0xFFB0B0B0),
+            size: iconSize,
           ),
           filled: true,
           fillColor: AppTheme.cardBackground,
-          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          contentPadding: EdgeInsets.symmetric(
+            vertical: ResponsiveUtils.getResponsiveValue(
+              context,
+              mobile: 14,
+              tablet: 16,
+              desktop: 18,
+            ),
+          ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(borderRadius),
             borderSide: BorderSide(
               color: AppTheme.lightGray.withValues(alpha: 0.25),
               width: 1,
             ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(borderRadius),
             borderSide: BorderSide(
               color: AppTheme.lightGray.withValues(alpha: 0.25),
               width: 1,
             ),
           ),
         ),
-        style: const TextStyle(
-          color: Color(0xFF3D3D3D),
-          fontSize: 16,
+        style: TextStyle(
+          color: const Color(0xFF3D3D3D),
+          fontSize: fontSize,
           fontWeight: FontWeight.w500,
         ),
         onChanged: (value) {

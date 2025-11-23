@@ -8,6 +8,7 @@ import '../providers/contact_provider.dart';
 import '../../domain/entities/contact.dart';
 import '../../core/utils/image_utils.dart';
 import '../../core/utils/color_utils.dart';
+import '../../core/utils/responsive_utils.dart';
 import '../../core/utils/snackbar_utils.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -262,12 +263,21 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
                           bottom: MediaQuery.of(context).viewInsets.bottom,
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: ResponsiveUtils.getHorizontalPadding(context),
+                          ),
                           child: Form(
                             key: _formKey,
                             child: Column(
                               children: [
-                                const SizedBox(height: 32),
+                                SizedBox(
+                                  height: ResponsiveUtils.getResponsiveValue(
+                                    context,
+                                    mobile: 32,
+                                    tablet: 40,
+                                    desktop: 48,
+                                  ),
+                                ),
                                 Center(
                                   child: Column(
                                     children: [
@@ -614,31 +624,37 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
               : null);
 
     final bool hasImage = imageProvider != null;
+    final avatarSize = ResponsiveUtils.getAvatarSize(context);
+    final innerSize = avatarSize * 0.9;
 
     if (!hasImage) {
       return Container(
-        width: 122,
-        height: 122,
+        width: avatarSize,
+        height: avatarSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: AppTheme.emptyStateIconGray,
         ),
-        child: const Icon(Icons.person, size: 60, color: Colors.white),
+        child: Icon(
+          Icons.person,
+          size: avatarSize * 0.5,
+          color: Colors.white,
+        ),
       );
     }
 
     if (_dominantColor == null && hasImage) {
       return Container(
-        width: 122,
-        height: 122,
+        width: avatarSize,
+        height: avatarSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: AppTheme.emptyStateIconGray,
         ),
         child: Center(
           child: Container(
-            width: 110,
-            height: 110,
+            width: innerSize,
+            height: innerSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
@@ -658,8 +674,8 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
         .toColor();
 
     return Container(
-      width: 122,
-      height: 122,
+      width: avatarSize,
+      height: avatarSize,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: lighterGlowColor.withValues(alpha: 0.25),
@@ -682,8 +698,8 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
       ),
       child: Center(
         child: Container(
-          width: 110,
-          height: 110,
+          width: innerSize,
+          height: innerSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: hasImage ? Colors.white : AppTheme.emptyStateIconGray,

@@ -40,44 +40,51 @@ class ContactListItem extends StatelessWidget {
           ),
         ],
       ),
-      child: ListTile(
-        leading: CircleAvatar(
-          radius: 28,
-          backgroundImage: contact.photoUrl != null && contact.photoUrl!.isNotEmpty
-              ? CachedNetworkImageProvider(contact.photoUrl!)
-              : null,
-          child: contact.photoUrl == null || contact.photoUrl!.isEmpty
-              ? Text(
-                  contact.firstLetter,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+      child: Container(
+        color: Colors.white,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: CircleAvatar(
+            radius: 28,
+            backgroundImage: contact.photoUrl != null && contact.photoUrl!.isNotEmpty
+                ? CachedNetworkImageProvider(contact.photoUrl!)
+                : null,
+            backgroundColor: Colors.blue,
+            child: contact.photoUrl == null || contact.photoUrl!.isEmpty
+                ? Text(
+                    contact.firstLetter,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  )
+                : null,
+          ),
+          title: Text(
+            contact.fullName,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF3D3D3D),
+            ),
+          ),
+          subtitle: Text(
+            contact.phoneNumber,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF6D6D6D),
+            ),
+          ),
+          trailing: contact.isInDeviceContacts
+              ? const Icon(
+                  Icons.phone_android,
+                  color: Colors.green,
+                  size: 20,
                 )
               : null,
+          onTap: onTap,
         ),
-        title: Text(
-          contact.fullName,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF3D3D3D),
-          ),
-        ),
-        subtitle: Text(
-          contact.phoneNumber,
-          style: const TextStyle(
-            color: Color(0xFF6D6D6D),
-          ),
-        ),
-        trailing: contact.isInDeviceContacts
-            ? const Icon(
-                Icons.phone_android,
-                color: Colors.green,
-                size: 20,
-              )
-            : null,
-        onTap: onTap,
       ),
     );
   }

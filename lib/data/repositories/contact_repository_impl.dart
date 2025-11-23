@@ -71,7 +71,11 @@ class ContactRepositoryImpl implements ContactRepository {
         (c) => c.id == id,
         orElse: () => throw Exception('Contact not found'),
       );
-      return found;
+      // Check device contacts status even for cached contacts
+      final isInDevice = await _deviceContactsService.isContactInDevice(
+        found.phoneNumber,
+      );
+      return found.copyWith(isInDeviceContacts: isInDevice);
     }
   }
 

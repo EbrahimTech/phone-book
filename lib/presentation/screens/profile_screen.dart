@@ -7,6 +7,7 @@ import '../providers/contact_provider.dart';
 import '../../domain/entities/contact.dart';
 import '../../core/utils/image_utils.dart';
 import '../../core/utils/color_utils.dart';
+import '../../core/utils/responsive_utils.dart';
 import '../../core/utils/snackbar_utils.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -48,22 +49,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _isEditing = widget.initialEditMode;
 
     if (widget.contact != null) {
-      setState(() {
-        _contact = widget.contact;
-        _isLoading = false;
-        _firstNameController.text = widget.contact!.firstName;
-        _lastNameController.text = widget.contact!.lastName;
-        _phoneController.text = widget.contact!.phoneNumber;
-      });
-
-      if (widget.contact!.photoUrl != null &&
-          widget.contact!.photoUrl!.isNotEmpty) {
-        Future.microtask(() {
-          if (mounted && _contact != null) {
-            _loadDominantColorFromContact();
-          }
-        });
-      }
+      _loadContactWithDeviceStatus(widget.contact!);
     } else {
       _loadContact();
     }
@@ -82,23 +68,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final repository = ref.read(contactRepositoryProvider);
       final contact = await repository.getContactById(widget.contactId);
 
-      setState(() {
-        _contact = contact;
-        _isLoading = false;
-        if (contact != null) {
-          _firstNameController.text = contact.firstName;
-          _lastNameController.text = contact.lastName;
-          _phoneController.text = contact.phoneNumber;
-        }
-      });
-
-      if (contact?.photoUrl != null && contact!.photoUrl!.isNotEmpty) {
-        Future.microtask(() {
-          if (mounted && _contact != null) {
-            _loadDominantColorFromContact();
-          }
-        });
-      }
+      _updateContactState(contact);
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -109,6 +79,42 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           'Error loading contact: ${e.toString()}',
         );
       }
+    }
+  }
+
+  Future<void> _loadContactWithDeviceStatus(Contact contact) async {
+    try {
+      final repository = ref.read(contactRepositoryProvider);
+      final isInDevice = await repository.isContactInDevice(
+        contact.phoneNumber,
+      );
+      final contactWithStatus = contact.copyWith(
+        isInDeviceContacts: isInDevice,
+      );
+
+      _updateContactState(contactWithStatus);
+    } catch (e) {
+      _updateContactState(contact);
+    }
+  }
+
+  void _updateContactState(Contact? contact) {
+    setState(() {
+      _contact = contact;
+      _isLoading = false;
+      if (contact != null) {
+        _firstNameController.text = contact.firstName;
+        _lastNameController.text = contact.lastName;
+        _phoneController.text = contact.phoneNumber;
+      }
+    });
+
+    if (contact?.photoUrl != null && contact!.photoUrl!.isNotEmpty) {
+      Future.microtask(() {
+        if (mounted && _contact != null) {
+          _loadDominantColorFromContact();
+        }
+      });
     }
   }
 
@@ -571,12 +577,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           bottom: MediaQuery.of(context).viewInsets.bottom,
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: ResponsiveUtils.getHorizontalPadding(
+                              context,
+                            ),
+                          ),
                           child: Form(
                             key: _formKey,
                             child: Column(
                               children: [
-                                const SizedBox(height: 32),
+                                SizedBox(
+                                  height: ResponsiveUtils.getResponsiveValue(
+                                    context,
+                                    mobile: 32,
+                                    tablet: 40,
+                                    desktop: 48,
+                                  ),
+                                ),
 
                                 Center(
                                   child: Column(
@@ -947,16 +964,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               : null);
 
     final bool hasImage = imageProvider != null;
+    final avatarSize = ResponsiveUtils.getAvatarSize(context);
+    final innerSize = avatarSize * 0.9;
 
     if (!hasImage) {
       return Container(
-        width: 122,
-        height: 122,
+        width: avatarSize,
+        height: avatarSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: AppTheme.emptyStateIconGray,
         ),
-        child: const Icon(Icons.person, size: 60, color: Colors.white),
+        child: Icon(Icons.person, size: avatarSize * 0.5, color: Colors.white),
       );
     }
 
@@ -970,13 +989,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
 
       return Container(
-        width: 122,
-        height: 122,
+        width: avatarSize,
+        height: avatarSize,
         decoration: const BoxDecoration(shape: BoxShape.circle),
         child: Center(
           child: Container(
-            width: 110,
-            height: 110,
+            width: innerSize,
+            height: innerSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
@@ -996,8 +1015,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         .toColor();
 
     return Container(
-      width: 122,
-      height: 122,
+      width: avatarSize,
+      height: avatarSize,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: lighterGlowColor.withValues(alpha: 0.25),
@@ -1020,8 +1039,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       child: Center(
         child: Container(
-          width: 110,
-          height: 110,
+          width: innerSize,
+          height: innerSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: hasImage ? Colors.white : AppTheme.emptyStateIconGray,
