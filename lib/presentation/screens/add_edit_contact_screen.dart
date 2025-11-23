@@ -240,6 +240,7 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
+      resizeToAvoidBottomInset: false,
       body: Container(
         decoration: const BoxDecoration(
           color: AppTheme.cardBackground,

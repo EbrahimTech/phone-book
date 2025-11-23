@@ -192,14 +192,9 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onTap: () {}, // absorb taps on the sheet itself
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).viewInsets.bottom,
-                    ),
-                    child: FractionallySizedBox(
-                      heightFactor: 0.94,
-                      child: const AddEditContactScreen(),
-                    ),
+                  child: FractionallySizedBox(
+                    heightFactor: 0.94,
+                    child: const AddEditContactScreen(),
                   ),
                 ),
               ),
@@ -677,17 +672,12 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onTap: () {},
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).viewInsets.bottom,
-                    ),
-                    child: FractionallySizedBox(
-                      heightFactor: 0.94,
-                      child: ProfileScreen(
-                        contactId: contact.id!,
-                        contact:
-                            contact, // Pass contact directly for immediate display
-                      ),
+                  child: FractionallySizedBox(
+                    heightFactor: 0.94,
+                    child: ProfileScreen(
+                      contactId: contact.id!,
+                      contact:
+                          contact, // Pass contact directly for immediate display
                     ),
                   ),
                 ),
@@ -726,17 +716,12 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onTap: () {},
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).viewInsets.bottom,
-                    ),
-                    child: FractionallySizedBox(
-                      heightFactor: 0.94,
-                      child: ProfileScreen(
-                        contactId: contact.id!,
-                        contact: contact,
-                        initialEditMode: true,
-                      ),
+                  child: FractionallySizedBox(
+                    heightFactor: 0.94,
+                    child: ProfileScreen(
+                      contactId: contact.id!,
+                      contact: contact,
+                      initialEditMode: true,
                     ),
                   ),
                 ),
