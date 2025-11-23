@@ -2,29 +2,65 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class DeviceContactsService {
-  /// Check if contact exists in device contacts by phone number
-  Future<bool> isContactInDevice(String phoneNumber) async {
+  static Set<String>? _cachedDevicePhoneNumbers;
+  static DateTime? _cacheTime;
+  static const _cacheDuration = Duration(minutes: 5);
+
+  /// Get all device phone numbers (cached)
+  Future<Set<String>> getDevicePhoneNumbers() async {
     try {
       final hasPermission = await _requestPermission();
-      if (!hasPermission) return false;
+      if (!hasPermission) return {};
 
+      // Use cache if available and not expired
+      if (_cachedDevicePhoneNumbers != null &&
+          _cacheTime != null &&
+          DateTime.now().difference(_cacheTime!) < _cacheDuration) {
+        return _cachedDevicePhoneNumbers!;
+      }
+
+      // Fetch contacts from device
       final contacts = await FlutterContacts.getContacts(
         withProperties: true,
         withThumbnail: false,
       );
-      final normalizedPhone = _normalizePhone(phoneNumber);
 
+      // Create set of normalized phone numbers for fast lookup
+      final phoneNumbers = <String>{};
       for (var contact in contacts) {
         for (var phone in contact.phones) {
-          if (_normalizePhone(phone.number) == normalizedPhone) {
-            return true;
+          final normalized = _normalizePhone(phone.number);
+          if (normalized.isNotEmpty) {
+            phoneNumbers.add(normalized);
           }
         }
       }
-      return false;
+
+      // Cache the result
+      _cachedDevicePhoneNumbers = phoneNumbers;
+      _cacheTime = DateTime.now();
+
+      return phoneNumbers;
+    } catch (e) {
+      return {};
+    }
+  }
+
+  /// Check if contact exists in device contacts by phone number
+  Future<bool> isContactInDevice(String phoneNumber) async {
+    try {
+      final devicePhones = await getDevicePhoneNumbers();
+      final normalizedPhone = _normalizePhone(phoneNumber);
+      return devicePhones.contains(normalizedPhone);
     } catch (e) {
       return false;
     }
+  }
+
+  /// Clear cache (call after saving contact to device)
+  void clearCache() {
+    _cachedDevicePhoneNumbers = null;
+    _cacheTime = null;
   }
 
   /// Save contact to device
@@ -43,6 +79,10 @@ class DeviceContactsService {
         ..phones = [Phone(phoneNumber)];
 
       await contact.insert();
+
+      // Clear cache to force refresh on next check
+      clearCache();
+
       return true;
     } catch (e) {
       return false;
@@ -67,4 +107,3 @@ class DeviceContactsService {
     return phone.replaceAll(RegExp(r'\D'), '');
   }
 }
-

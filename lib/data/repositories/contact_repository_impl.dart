@@ -23,15 +23,16 @@ class ContactRepositoryImpl implements ContactRepository {
       // Try to get from API first
       final contacts = await _apiService.getAllContacts();
       
-      // Update device contacts status
-      final contactsWithDeviceStatus = await Future.wait(
-        contacts.map((contact) async {
-          final isInDevice = await _deviceContactsService.isContactInDevice(
-            contact.phoneNumber,
-          );
-          return contact.copyWith(isInDeviceContacts: isInDevice);
-        }),
-      );
+      // Update device contacts status (optimized - check all at once)
+      // First, get all device phone numbers once
+      final devicePhones = await _deviceContactsService.getDevicePhoneNumbers();
+      
+      // Then check each contact against the cached set
+      final contactsWithDeviceStatus = contacts.map((contact) {
+        final normalizedPhone = _normalizePhone(contact.phoneNumber);
+        final isInDevice = devicePhones.contains(normalizedPhone);
+        return contact.copyWith(isInDeviceContacts: isInDevice);
+      }).toList();
 
       // Cache contacts locally
       await ContactLocalService.cacheContacts(
@@ -54,6 +55,10 @@ class ContactRepositoryImpl implements ContactRepository {
       }
       rethrow;
     }
+  }
+
+  String _normalizePhone(String phone) {
+    return phone.replaceAll(RegExp(r'\D'), '');
   }
 
   @override
