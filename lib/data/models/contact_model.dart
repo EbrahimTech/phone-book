@@ -34,6 +34,7 @@ class ContactModel extends Contact {
     };
   }
 
+  @override
   ContactModel copyWith({
     String? id,
     String? firstName,

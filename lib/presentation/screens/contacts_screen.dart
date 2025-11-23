@@ -87,8 +87,6 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
             children: [
               _buildSearchBar(),
               const SizedBox(height: 16),
-
-              // Body Content
               Expanded(child: _buildBody(contactsState, searchState)),
             ],
           ),
@@ -177,7 +175,6 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
               const SizedBox(height: 16),
               TextButton.icon(
                 onPressed: () {
-                  // Open Swagger in browser
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text(
@@ -196,12 +193,10 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
       );
     }
 
-    // Show search results if searching
     if (_isSearching) {
       return _buildSearchResults(searchState);
     }
 
-    // Show grouped contacts
     return _buildGroupedContacts(contactsState);
   }
 
@@ -265,7 +260,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
               Divider(
                 height: 1,
                 thickness: 1,
-                color: Color(0xFFE8E8E8).withOpacity(0.5),
+                color: Color(0xFFE8E8E8).withValues(alpha: 0.5),
               ),
               ...List.generate(searchState.searchHistory.length, (index) {
                 final query = searchState.searchHistory[index];
@@ -292,7 +287,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                         height: 1,
                         thickness: 1,
                         indent: 56,
-                        color: Color(0xFFE8E8E8).withOpacity(0.5),
+                        color: Color(0xFFE8E8E8).withValues(alpha: 0.5),
                       ),
                   ],
                 );
@@ -326,13 +321,46 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
   }
 
   void _navigateToProfile(Contact contact) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProfileScreen(contactId: contact.id!),
-      ),
-    ).then((_) {
-      ref.read(contactsProvider.notifier).refreshContacts();
+    showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(context).pop(),
+          child: Stack(
+            children: [
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () {},
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom,
+                    ),
+                    child: FractionallySizedBox(
+                      heightFactor: 0.94,
+                      child: ProfileScreen(
+                        contactId: contact.id!,
+                        contact:
+                            contact, // Pass contact directly for immediate display
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    ).then((result) {
+      if (result == true) {
+        ref.read(contactsProvider.notifier).refreshContacts();
+      }
     });
   }
 
@@ -397,7 +425,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide(
-              color: AppTheme.lightGray.withOpacity(0.25),
+              color: AppTheme.lightGray.withValues(alpha: 0.25),
               width: 1,
             ),
           ),
@@ -444,7 +472,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
           Divider(
             height: 1,
             thickness: 1,
-            color: Color(0xFFE8E8E8).withOpacity(0.5),
+            color: Color(0xFFE8E8E8).withValues(alpha: 0.5),
           ),
           ...contacts.asMap().entries.map((entry) {
             final contact = entry.value;
@@ -459,7 +487,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                     thickness: 1,
                     indent: 72,
                     endIndent: 16,
-                    color: Color(0xFFE8E8E8).withOpacity(0.5),
+                    color: Color(0xFFE8E8E8).withValues(alpha: 0.5),
                   ),
               ],
             );
@@ -498,7 +526,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
       borderRadius: BorderRadius.circular(16),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.04),
+          color: Colors.black.withValues(alpha: 0.04),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),
@@ -513,7 +541,6 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Empty State Icon
             Container(
               width: 110,
               height: 110,
@@ -528,8 +555,6 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
               ),
             ),
             const SizedBox(height: 24),
-
-            // "No Contacts" Title
             const Text(
               'No Contacts',
               style: TextStyle(
@@ -539,16 +564,12 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
               ),
             ),
             const SizedBox(height: 10),
-
-            // Description
             const Text(
               'Contacts you\'ve added will appear here.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Color(0xFF4A4A4A), fontSize: 15),
             ),
             const SizedBox(height: 22),
-
-            // Create New Contact Link
             GestureDetector(
               onTap: _openAddContactSheet,
               child: const Text(

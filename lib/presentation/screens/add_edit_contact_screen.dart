@@ -28,15 +28,13 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
   final _phoneController = TextEditingController();
   File? _selectedImage;
   bool _isLoading = false;
-  bool _showSuccessAnimation = false;
-  Color? _dominantColor; // Dominant color from the selected image
-  bool _isExtractingColor = false; // Flag to prevent duplicate extractions
+  Color? _dominantColor;
+  bool _isExtractingColor = false;
   late AnimationController _fadeController;
   late AnimationController _lottieController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
 
-  // Track if form is valid for "Done" button
   bool get _isFormValid {
     return _firstNameController.text.trim().isNotEmpty &&
         _lastNameController.text.trim().isNotEmpty &&
@@ -54,7 +52,6 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
       _loadDominantColorFromContact();
     }
 
-    // Initialize animation controllers
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -68,15 +65,10 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
       parent: _fadeController,
       curve: Curves.easeInOut,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.elasticOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.elasticOut),
+    );
 
-    // Add listeners to update form validity
     _firstNameController.addListener(_updateFormValidity);
     _lastNameController.addListener(_updateFormValidity);
     _phoneController.addListener(_updateFormValidity);
@@ -116,27 +108,27 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
       // Compress image
       final compressed = await ImageUtils.compressImage(file);
       final imageToUse = compressed ?? file;
-      
+
       setState(() {
         _selectedImage = imageToUse;
         _dominantColor = null; // Reset color while extracting
       });
 
-      // Extract dominant color from the selected image (async, doesn't block UI)
+      // Extract dominant color from the selected image
       _extractDominantColor(imageToUse);
     }
   }
 
   Future<void> _extractDominantColor(File imageFile) async {
     if (!mounted || _isExtractingColor) return;
-    
+
     setState(() {
       _isExtractingColor = true;
     });
-    
+
     try {
       final color = await ColorUtils.getDominantColor(imageFile.path);
-      
+
       if (mounted) {
         setState(() {
           _dominantColor = color;
@@ -154,7 +146,7 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
   }
 
   Future<void> _loadDominantColorFromContact() async {
-    if (widget.contact?.photoUrl == null || 
+    if (widget.contact?.photoUrl == null ||
         widget.contact!.photoUrl!.isEmpty ||
         _isExtractingColor) {
       return;
@@ -166,7 +158,7 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
 
     try {
       Color? color;
-      
+
       if (widget.contact!.photoUrl!.startsWith('http')) {
         color = await ColorUtils.getDominantColorFromNetwork(
           widget.contact!.photoUrl!,
@@ -228,7 +220,6 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
         _isLoading = false;
       });
 
-      // Show full-screen success overlay
       await _showSuccessOverlay();
 
       if (mounted) {
@@ -249,81 +240,6 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_showSuccessAnimation) {
-      return Scaffold(
-        backgroundColor: Colors.white,
-        body: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Container(
-            width: double.infinity,
-            height: double.infinity,
-            color: Colors.white,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Lottie Animation with scale effect
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: SizedBox(
-                      width: 200,
-                      height: 200,
-                      child: Lottie.asset(
-                        'Done.json',
-                        controller: _lottieController,
-                        fit: BoxFit.contain,
-                        repeat: false,
-                        animate: true,
-                        options: LottieOptions(enableMergePaths: true),
-                        onLoaded: (composition) {
-                          // Update controller duration to match animation
-                          _lottieController.duration = composition.duration;
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // "All Done!" text
-                  const Text(
-                    'All Done!',
-                    style: TextStyle(
-                      color: Color(0xFF1C1C1E), // Dark gray/black
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // "New contact saved" text with emoji
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        widget.contact == null
-                            ? 'New contact saved'
-                            : 'Contact updated',
-                        style: const TextStyle(
-                          color: Color(0xFF8E8E93), // Light gray
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Text(
-                        '🎉',
-                        style: TextStyle(fontSize: 18),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
@@ -355,16 +271,11 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
                             child: Column(
                               children: [
                                 const SizedBox(height: 32),
-
-                                // Profile Picture Section
                                 Center(
                                   child: Column(
                                     children: [
-                                      // Profile Picture Circle
                                       _buildAvatar(),
                                       const SizedBox(height: 14),
-
-                                      // Add Photo Link
                                       GestureDetector(
                                         onTap: _showPhotoSourceSheet,
                                         child: Text(
@@ -383,8 +294,6 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
                                 ),
 
                                 const SizedBox(height: 36),
-
-                                // Input Fields
                                 Column(
                                   children: [
                                     TextFormField(
@@ -393,7 +302,7 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
                                         'First Name',
                                       ),
                                       style: const TextStyle(
-                                        color: AppTheme.darkGray,
+                                        color: Color(0xFF202020),
                                         fontSize: 16,
                                       ),
                                       validator: (value) {
@@ -409,7 +318,7 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
                                       controller: _lastNameController,
                                       decoration: _inputDecoration('Last Name'),
                                       style: const TextStyle(
-                                        color: AppTheme.darkGray,
+                                        color: Color(0xFF202020),
                                         fontSize: 16,
                                       ),
                                       validator: (value) {
@@ -428,7 +337,7 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
                                         'Phone Number',
                                       ),
                                       style: const TextStyle(
-                                        color: AppTheme.darkGray,
+                                        color: Color(0xFF202020),
                                         fontSize: 16,
                                       ),
                                       validator: (value) {
@@ -586,18 +495,12 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
   Future<void> _showSuccessOverlay() async {
     final rootNav = Navigator.of(context, rootNavigator: true);
 
-    // Reset animation controllers
     _lottieController.reset();
     _fadeController.reset();
-    _scaleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.elasticOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.elasticOut),
+    );
 
-    // Start animations
     _fadeController.forward();
     _lottieController.forward();
 
@@ -613,7 +516,6 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
     };
     _lottieController.addStatusListener(statusListener);
 
-    // If already completed, complete immediately
     if (_lottieController.status == AnimationStatus.completed) {
       _lottieController.removeStatusListener(statusListener);
       completer.complete();
@@ -634,7 +536,6 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Lottie Animation with scale effect
                   ScaleTransition(
                     scale: _scaleAnimation,
                     child: SizedBox(
@@ -648,10 +549,9 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
                         animate: true,
                         options: LottieOptions(enableMergePaths: true),
                         onLoaded: (composition) {
-                          // Update controller duration to match animation
                           _lottieController.duration = composition.duration;
-                          // Restart animation if needed
-                          if (_lottieController.status == AnimationStatus.completed) {
+                          if (_lottieController.status ==
+                              AnimationStatus.completed) {
                             _lottieController.reset();
                             _lottieController.forward();
                           }
@@ -660,7 +560,6 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // "All Done!" text
                   const Text(
                     'All Done!',
                     style: TextStyle(
@@ -671,7 +570,6 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // "New contact saved" text with emoji
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -681,16 +579,13 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
                             ? 'New contact saved'
                             : 'Contact updated',
                         style: const TextStyle(
-                          color: Color(0xFF8E8E93), // Light gray
+                          color: Color(0xFF8E8E93),
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Text(
-                        '🎉',
-                        style: TextStyle(fontSize: 18),
-                      ),
+                      const Text('🎉', style: TextStyle(fontSize: 18)),
                     ],
                   ),
                 ],
@@ -701,13 +596,8 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
       },
     );
 
-    // Wait for Lottie animation to complete
     await completer.future;
-
-    // Add a small delay after animation completes for better UX
     await Future.delayed(const Duration(milliseconds: 300));
-
-    // Fade out before closing
     await _fadeController.reverse();
 
     if (rootNav.canPop()) {
@@ -727,8 +617,7 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
               : null);
 
     final bool hasImage = imageProvider != null;
-    
-    // If no image, show default avatar
+
     if (!hasImage) {
       return Container(
         width: 122,
@@ -740,9 +629,7 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
         child: const Icon(Icons.person, size: 60, color: Colors.white),
       );
     }
-    
-    // If color is still being extracted, show avatar without glow
-    // Glow will appear automatically once extraction completes via setState
+
     if (_dominantColor == null && hasImage) {
       return Container(
         width: 122,
@@ -758,21 +645,15 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
-              border: Border.all(
-                color: Colors.white,
-                width: 3,
-              ),
+              border: Border.all(color: Colors.white, width: 3),
               image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
             ),
           ),
         ),
       );
     }
-    
-    // Use dominant color extracted from image - ONLY extracted colors, no fixed colors
+
     final baseGlowColor = _dominantColor!;
-    
-    // Create a lighter, softer glow color from the extracted dominant color
     final hsl = HSLColor.fromColor(baseGlowColor);
     final lighterGlowColor = hsl
         .withLightness((hsl.lightness + 0.2).clamp(0.0, 1.0))
@@ -784,18 +665,15 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
       height: 122,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        // Outer glow circle with extracted dominant color (always from image)
         color: lighterGlowColor.withValues(alpha: 0.25),
         boxShadow: hasImage
             ? [
-                // Main soft glow effect (matches design)
                 BoxShadow(
                   color: lighterGlowColor.withValues(alpha: 0.5),
                   blurRadius: 35,
                   spreadRadius: 10,
                   offset: const Offset(0, 0),
                 ),
-                // Additional subtle outer glow
                 BoxShadow(
                   color: lighterGlowColor.withValues(alpha: 0.3),
                   blurRadius: 25,

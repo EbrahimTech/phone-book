@@ -47,6 +47,8 @@ class AppTheme {
           color: lightGray,
           fontSize: 16,
         ),
+        // Ensure input text color is #202020
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       textTheme: const TextTheme(
         bodyLarge: TextStyle(
