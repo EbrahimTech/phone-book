@@ -313,7 +313,7 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
                                         return null;
                                       },
                                     ),
-                                    const SizedBox(height: 14),
+                                    const SizedBox(height: 12),
                                     TextFormField(
                                       controller: _lastNameController,
                                       decoration: _inputDecoration('Last Name'),
@@ -329,7 +329,7 @@ class _AddEditContactScreenState extends ConsumerState<AddEditContactScreen>
                                         return null;
                                       },
                                     ),
-                                    const SizedBox(height: 14),
+                                    const SizedBox(height: 12),
                                     TextFormField(
                                       controller: _phoneController,
                                       keyboardType: TextInputType.phone,
